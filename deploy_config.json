@@ -1,15 +1,16 @@
 {
     "playcanvas": {
-        "project_id": 1316148,
-        "project_name": "casa-foa",
+        "project_id": 1370545,
+        "project_name": "trin",
         "branch_id": ""
     },
     "html_modify": {
         "cdn_url": "https://dit9akr5f3nsa.cloudfront.net",
+        "cloudfront_distribution_id": "E1XXXXXXX",
         "modify_indexhtml": false,
-        "title": "Docta"
+        "title": "trina"
     },
     "sftp": {
-        "remote_path": "/ruta/remota/"
+        "remote_path": "html/ladeseada/"
     }
 }
