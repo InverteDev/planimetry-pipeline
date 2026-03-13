@@ -12,10 +12,13 @@ El proceso de despliegue se divide en 4 scripts principales:
 2. **`modify_build.ts`** *(Breve implementación incompleta)*
    Su objetivo es descomprimir el archivo `.zip` descargado, modificar los archivos propios del build según sea necesario (por ejemplo, rutas CDN, títulos HTML), y dejar la carpeta lista para subirla al servidor.
 
-3. **`upload_sftp.ts`** *(Aún no implementado)*
-   Se encargará de conectarse al servidor SFTP, subir los archivos del nuevo build generado, reemplazar los archivos viejos y colocar los nuevos en la ruta remota.
+3. **`deploy_sftp.ts`** *(implementación incompleta)*
+   Se conecta al servidor SFTP, realiza un wipe selectivo (protegiendo el `index.html` si es necesario) y sube los archivos del nuevo build generado a la ruta remota.
 
-4. **`log_deploy.ts`** *(Aún no implementado)*
+4. **`invalidate_cache.ts`** *(Aún no implementado)*
+   Se encarga de conectarse a AWS y solicitar una invalidación en la distribución de CloudFront para asegurar que los usuarios reciban los nuevos assets inmediatamente, sin afectar el uptime.
+
+5. **`log_deploy.ts`** *(Aún no implementado)*
    Llevará un registro del despliegue exitoso (o fallido) escribiendo los detalles en un archivo de log local o remoto.
 
 ---
@@ -39,6 +42,17 @@ El proyecto usa `dotenv` para cargar secretos que no deben subirse al repositori
 
 ```env
 PLAYCANVAS_API_KEY=tu_token_de_acceso_a_playcanvas
+
+# Credenciales SFTP
+SFTP_HOST=tu_servidor.com
+SFTP_PORT=22
+SFTP_USER=tu_usuario
+SFTP_PASSWORD=tu_contraseña
+
+# Credenciales AWS
+AWS_ACCESS_KEY_ID=tu_access_key
+AWS_SECRET_ACCESS_KEY=tu_secret_key
+AWS_REGION=us-east-1
 ```
 
 ### Configuración (`deploy_config.json`)
@@ -57,6 +71,7 @@ Ejemplo de estructura actual:
     },
     "html_modify": {
         "cdn_url": "https://dit9akr5f3nsa.cloudfront.net",
+        "cloudfront_distribution_id": "E1XXXXXXX",
         "modify_indexhtml": false,
         "title": "Docta"
     },
@@ -65,6 +80,8 @@ Ejemplo de estructura actual:
     }
 }
 ```
+
+**Nota:** El remote_path está tipado estrictamente y siempre debe comenzar con html/.
 
 ---
 
@@ -86,7 +103,13 @@ npx ts-node src/fetch_playcanvas.ts
 npx ts-node src/modify_build.ts
 ```
 
-*(Los scripts 3 y 4 se ejecutarán de la misma manera una vez implementados).*
+### 3. Subir via SFTP *(WIP)*
+
+```bash
+npx ts-node src/deploy_sftp.ts
+```
+
+*(Los scripts 4 y 5 se ejecutarán de la misma manera una vez implementados).*
 
 ---
 
