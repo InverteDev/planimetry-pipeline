@@ -8,15 +8,78 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const configPath = path.resolve(__dirname, '../deploy_config.json');
-const zipPath = path.resolve(__dirname, 'build.zip');
+const zipPath = path.resolve(__dirname, '../temp/build.zip');
 const distPath = path.resolve(__dirname, '../dist');
 
 const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
 async function modifyHTML(indexPath: string, config: any): Promise<void> {
-    // Implementación pendiente
-    return Promise.resolve();
+    try {
+        let content = await fsPromises.readFile(indexPath, 'utf-8');
+        
+        if (config.html_modify?.title) {
+            content = content.replace(/<title>.*<\/title>/, `<title>${config.html_modify.title}</title>`);
+        }
+
+        content = content.replace(/\n\s*\n/g, '\n');
+
+        await fsPromises.writeFile(indexPath, content, 'utf-8');
+        console.log(`✅ HTML Modificado: Título actualizado y código linteado.`);
+    } catch (error) {
+        console.error(`❌ Error al modificar ${indexPath}:`, error);
+        throw error;
+    }
 }
+
+async function injectSceneDataToHTML(distPath: string, indexPath: string): Promise<void> {
+    const settingsPath = path.join(distPath, 'js', '__settings__.mjs');
+    
+    if (!fs.existsSync(settingsPath)) {
+        console.log(`⚠️ No se encontró __settings__.mjs para extraer SCENE_PATH.`);
+        return;
+    }
+
+    try {
+        const settingsContent = await fsPromises.readFile(settingsPath, 'utf-8');
+        const scenePathMatch = settingsContent.match(/const SCENE_PATH\s*=\s*"([^"]+)";/);
+        
+        if (!scenePathMatch || !scenePathMatch[1]) return;
+
+        const sceneFilename = scenePathMatch[1];
+        const sceneJsonPath = path.join(distPath, sceneFilename);
+
+        if (!fs.existsSync(sceneJsonPath)) return;
+
+        const sceneJsonContent = await fsPromises.readFile(sceneJsonPath, 'utf-8');
+        const sceneData = JSON.parse(sceneJsonContent);
+
+        const branchId = sceneData.branch_id;
+        const checkpointId = sceneData.checkpoint_id;
+        const sceneId = sceneData.id;
+
+        if (!branchId || !checkpointId) return;
+
+        let htmlContent = await fsPromises.readFile(indexPath, 'utf-8');
+        
+        // Formateado con la indentación exacta y un solo salto al final
+        const metaTags = `    <meta name="pc-branch-id" content="${branchId}">
+    <meta name="pc-checkpoint-id" content="${checkpointId}">
+    <meta name="pc-scene-id" content="${sceneId}">
+    <!-- Deployed on: ${new Date().toISOString()} -->
+    \n`;
+
+        if (htmlContent.includes('</head>')) {
+            htmlContent = htmlContent.replace('</head>', `${metaTags}</head>`);
+        }
+
+        await fsPromises.writeFile(indexPath, htmlContent, 'utf-8');
+        console.log(`✅ HTML Modificado: Metadatos de escena inyectados.`);
+
+    } catch (error) {
+        console.error(`❌ Error al inyectar datos de la escena:`, error);
+    }
+}
+
 
 async function modifyJS(distPath: string, config: any): Promise<void> {
     const jsPath = path.join(distPath, 'js', '__settings__.mjs');
@@ -35,7 +98,8 @@ async function modifyJS(distPath: string, config: any): Promise<void> {
 
     // Limpiamos los segmentos para evitar dobles barras
     const cleanCdn = cdnUrl.replace(/\/+$/, '');
-    const cleanPath = projectPath.replace(/^\/+/, '').replace(/\/+$/, '');
+    // Quitamos 'html/' del remote_path para el CDN, y limpiamos barras
+    const cleanPath = projectPath.replace(/^html\//, '').replace(/^\/+/, '').replace(/\/+$/, '');
     const baseUrl = `${cleanCdn}/${cleanPath}`;
 
     try {
@@ -83,7 +147,10 @@ export async function modifyBuild() {
 
         const mods = config.html_modify;
         if (mods && mods.modify_indexhtml) {
-            tasks.push(modifyHTML(indexPath, config));
+            tasks.push((async () => {
+                await injectSceneDataToHTML(distPath, indexPath); // 1ro: Inyecta las <meta> tags
+                await modifyHTML(indexPath, config);              // 2do: Inyecta el comentario "Deployed on:" abajo del todo
+            })());
         } else {
             console.log(`⏩ Modificaciones HTML deshabilitadas en el config. Borrando index.html del build.`);
             if (fs.existsSync(indexPath)) {
