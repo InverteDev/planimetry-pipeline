@@ -1,16 +1,16 @@
 {
     "playcanvas": {
-        "project_id": 1370545,
-        "project_name": "trin",
+        "project_id": 1403107,
+        "project_name": "edificio-chacabuco--edificio",
         "branch_id": ""
     },
     "html_modify": {
         "cdn_url": "https://dit9akr5f3nsa.cloudfront.net",
-        "cloudfront_distribution_id": "E1XXXXXXX",
-        "modify_indexhtml": false,
-        "title": "trina"
+        "cloudfront_distribution_id": "E1IQTSWW98QM63",
+        "modify_indexhtml": true,
+        "title": "Chacabuco Testing"
     },
     "sftp": {
-        "remote_path": "html/ladeseada/"
+        "remote_path": "html/cicdtest/"
     }
 }
