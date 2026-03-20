@@ -7,7 +7,7 @@
     "html_modify": {
         "cdn_url": "https://dit9akr5f3nsa.cloudfront.net",
         "cloudfront_distribution_id": "E1IQTSWW98QM63",
-        "modify_indexhtml": false,
+        "modify_indexhtml": true,
         "title": "Chacabuco Testing2"
     },
     "sftp": {
